@@ -1,0 +1,47 @@
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/build/
+*.zip
+*.txt
+*.lock
+!pubspec.lock
+
+# Android
+.gradle/
+local.properties
+*.apk
+*.ap_
+*.dex
+*.class
+bin/
+gen/
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Backend
+__pycache__/
+*.pyc
+.env
+venv/
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+
+# Other
+ciro_extracted/
+ciro/
+firebase-key.json
+*.json
+!ciro_datasets.json
+!CIRO_Dataset_Schema.md
+!pubspec.lock
+!package.json
+!package-lock.json
