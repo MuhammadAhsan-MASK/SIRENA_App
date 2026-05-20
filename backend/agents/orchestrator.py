@@ -1,12 +1,13 @@
 import json
 import asyncio
 import httpx
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 from backend.agents.agent_modules import (
     SignalAgent, DetectionAgent, SeverityAgent, 
     PlanningAgent, ExecutionAgent, OutcomeAgent
 )
+from backend.agents.urdu_intake import intake_agent
 
 import firebase_admin
 from firebase_admin import credentials, messaging
@@ -108,6 +109,62 @@ class AgentOrchestrator:
         
         asyncio.create_task(self._process_agents(session_id))
         return session_id
+
+    async def chat(self, message: str, session_id: Optional[str] = None):
+        """
+        Handles a chat message, optionally within an existing session.
+        If it's a new report, it starts a session.
+        """
+        if not session_id:
+            session_id = f"chat-{int(asyncio.get_event_loop().time())}"
+            self.sessions[session_id] = {
+                "traces": [],
+                "status": "chatting",
+                "data": {},
+                "messages": []
+            }
+        
+        session = self.sessions[session_id]
+        session["messages"].append({"role": "user", "content": message})
+        
+        # Invoke Intake Agent
+        result = await intake_agent.process_chat(message, context=session["data"])
+        
+        # Add thought to traces
+        session["traces"].append({"agent": "IntakeAgent", "message": result.get("thought", "Analyzing report...")})
+        
+        if result.get("resolved") and result.get("extracted_info"):
+            # Trigger full pipeline if we have enough info
+            info = result["extracted_info"]
+            city = info.get("city", "Islamabad")
+            # Map type to scenario
+            ctype = str(info.get("crisis_type", "")).lower()
+            if "flood" in ctype: scenario_id = 1
+            elif "heat" in ctype: scenario_id = 2
+            elif "road" in ctype or "block" in ctype: scenario_id = 3
+            elif "accident" in ctype: scenario_id = 4
+            elif "power" in ctype or "blackout" in ctype: scenario_id = 5
+            else: scenario_id = 1 # Fallback
+            
+            # Update session to full scenario
+            session["scenario_id"] = f"SCN-00{scenario_id}"
+            session["origin"] = info.get("zone", "Detected Zone")
+            session["destination"] = "Nearest Hospital"
+            session["status"] = "running"
+            
+            asyncio.create_task(self._process_agents(session_id))
+            
+            response_text = f"The crisis has been verified. I am initiating a response plan for {session['origin']} in {city}. You can view the live map now."
+        else:
+            response_text = result.get("response") or result.get("clarification_question") or "Interesting. Can you tell me more about the location?"
+            
+        session["messages"].append({"role": "assistant", "content": response_text})
+        return {
+            "session_id": session_id,
+            "response": response_text,
+            "resolved": result.get("resolved", False),
+            "thought": result.get("thought")
+        }
 
     async def _process_agents(self, session_id: str):
         session = self.sessions[session_id]

@@ -42,6 +42,16 @@ class AlertRequest(BaseModel):
     alert_text: str
     crisis_type: str
 
+class ChatRequest(BaseModel):
+    message: str
+    session_id: Optional[str] = None
+
+class ChatResponse(BaseModel):
+    response: str
+    session_id: str
+    resolved: bool
+    thought: str
+
 class ScenarioResponse(BaseModel):
     session_id: str
     status: str
@@ -80,6 +90,16 @@ async def send_alert(req: AlertRequest):
 async def get_session(session_id: str):
     data = orchestrator.get_session_data(session_id)
     return data
+
+@app.post("/api/chat", response_model=ChatResponse)
+async def api_chat(req: ChatRequest):
+    result = await orchestrator.chat(req.message, req.session_id)
+    return ChatResponse(
+        response=result["response"],
+        session_id=result["session_id"],
+        resolved=result["resolved"],
+        thought=result["thought"]
+    )
 
 @app.get("/api/traces/{session_id}")
 async def get_traces(session_id: str):

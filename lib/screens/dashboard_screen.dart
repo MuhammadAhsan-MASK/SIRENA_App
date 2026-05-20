@@ -8,6 +8,7 @@ import 'package:ciro/repositories/crisis_repository.dart';
 import 'package:ciro/widgets/agent_trace_panel.dart';
 import 'package:ciro/widgets/tactical_map_view.dart';
 import 'package:ciro/widgets/signal_feed_list.dart';
+import 'package:ciro/widgets/chat_widget.dart';
 import 'package:ciro/services/data_service.dart';
 import 'package:ciro/services/sirena_api_service.dart';
 
@@ -217,6 +218,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
               backgroundColor: CIROTheme.secondary,
               icon: const Icon(Icons.analytics, color: Colors.black, size: 18),
               label: const Text('REPORT', style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(height: 8),
+            FloatingActionButton.extended(
+              heroTag: 'chat_btn',
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => const ChatWidget(),
+                );
+              },
+              backgroundColor: CIROTheme.primary,
+              icon: const Icon(Icons.auto_awesome, color: Colors.black, size: 18),
+              label: const Text('CHAT', style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
