@@ -33,6 +33,7 @@ async def log_requests(request: Request, call_next):
 class SignalIngestRequest(BaseModel):
     user_origin: str
     user_destination: str
+    scenario: Optional[str] = None
 
 class RouteUpdateRequest(BaseModel):
     alternate_route: str
@@ -73,6 +74,19 @@ async def ingest_signal(req: SignalIngestRequest):
     # Default to scenario 1 (Flooding) for Islamabad, scenario 2 (Heatwave) for Karachi
     # as these are the "primary" scenarios for those cities in our dataset.
     scenario_id = 1 if city == "Islamabad" else 2
+    
+    if req.scenario:
+        scenario_lower = req.scenario.lower()
+        if "flood" in scenario_lower: scenario_id = 1
+        elif "heat" in scenario_lower: scenario_id = 2
+        elif "road" in scenario_lower and "block" in scenario_lower: scenario_id = 3
+        elif "accident" in scenario_lower: scenario_id = 4
+        elif "infrastructure" in scenario_lower or "power" in scenario_lower: scenario_id = 5
+        elif "scn-00" in scenario_lower:
+            try:
+                scenario_id = int(scenario_lower[-1])
+            except: pass
+
     session_id = await orchestrator.run_scenario(scenario_id, origin=req.user_origin, destination=req.user_destination)
     return {"session_id": session_id, "status": "ingested", "city": city}
 
