@@ -20,6 +20,7 @@ class CrisisBloc extends Bloc<CrisisEvent, CrisisState> {
       final response = await _repository.ingestSignal(
         origin: event.origin,
         destination: event.destination,
+        scenario: event.scenario,
       );
       emit(SignalIngested(response));
     } catch (e) {

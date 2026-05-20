@@ -11,10 +11,11 @@ abstract class CrisisEvent extends Equatable {
 class IngestSignalEvent extends CrisisEvent {
   final String origin;
   final String destination;
-  IngestSignalEvent({required this.origin, required this.destination});
+  final String? scenario;
+  IngestSignalEvent({required this.origin, required this.destination, this.scenario});
 
   @override
-  List<Object?> get props => [origin, destination];
+  List<Object?> get props => [origin, destination, scenario];
 }
 
 /// Dispatches an emergency alert via /api/send-alert.

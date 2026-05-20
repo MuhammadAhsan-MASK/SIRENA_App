@@ -45,7 +45,7 @@ class _ChatWidgetState extends State<ChatWidget> {
     _scrollToBottom();
 
     try {
-      final dio = Dio(BaseOptions(baseUrl: 'http://127.0.0.1:8000'));
+      final dio = Dio(BaseOptions(baseUrl: 'https://muhammadahsanmask-sirena-backend.hf.space'));
       final response = await dio.post('/api/chat', data: {
         'message': text,
         'session_id': _sessionId,

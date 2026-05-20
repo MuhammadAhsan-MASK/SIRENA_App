@@ -102,19 +102,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
         actions: [
-          PopupMenuButton<String>(
+          IconButton(
             icon: const Icon(Icons.settings_input_component, color: CIROTheme.primary),
-            onSelected: (value) {
-              setState(() => _currentScenario = value);
-              _showIngestDialog(context, value);
-            },
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: 'Urban Flooding', child: Text('Scenario 1: Flooding')),
-              PopupMenuItem(value: 'Heatwave Emergency', child: Text('Scenario 2: Heatwave')),
-              PopupMenuItem(value: 'Road Blockage', child: Text('Scenario 3: Road Blockage')),
-              PopupMenuItem(value: 'Road Accident', child: Text('Scenario 4: Accident')),
-              PopupMenuItem(value: 'Infrastructure Failure', child: Text('Scenario 5: Infrastructure')),
-            ],
+            tooltip: 'Run New Route Analysis',
+            onPressed: () => _showIngestDialog(context),
           ),
           const SizedBox(width: 8),
           Container(
@@ -145,30 +136,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(12.0), // Reduced slightly
+          padding: const EdgeInsets.all(12.0),
           child: Column(
             children: [
               Expanded(
-                flex: 5, // Increased from 3
+                flex: 5,
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Left: Signal Feed
+                    // map takes full width now
                     Expanded(
                       flex: 1,
-                      child: _buildPanel(
-                        title: 'SIGNALS',
-                        child: SignalFeedList(
-                          scenario: _currentScenario,
-                          activeOrigin: _activeOrigin,
-                          activeDestination: _activeDestination,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Center: Map View
-                    Expanded(
-                      flex: 2,
                       child: _buildPanel(
                         title: 'TACTICAL MAP',
                         child: TacticalMapView(
@@ -184,7 +162,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 12),
               // Bottom: Agent Thought Stream
               Expanded(
-                flex: 2, // Adjusted ratio
+                flex: 2,
                 child: _buildPanel(
                   title: 'AGENT THOUGHT STREAM',
                   child: AgentTracePanel(
@@ -199,15 +177,57 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 20), // Lift slightly above bottom panel
+        padding: const EdgeInsets.only(bottom: 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             FloatingActionButton.extended(
+              heroTag: 'signals_btn',
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  backgroundColor: CIROTheme.surface,
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+                  builder: (context) {
+                    return Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                            child: Text('LIVE SIGNALS', style: TextStyle(color: CIROTheme.primary, fontSize: 16, fontWeight: FontWeight.bold)),
+                          ),
+                          Expanded(
+                            child: SignalFeedList(
+                              scenario: _currentScenario,
+                              activeOrigin: _activeOrigin,
+                              activeDestination: _activeDestination,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.white10),
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('CLOSE'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+              backgroundColor: Colors.black,
+              icon: const Icon(Icons.radar, color: CIROTheme.primary, size: 18),
+              label: const Text('SIGNALS', style: TextStyle(color: CIROTheme.primary, fontSize: 10, fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(height: 8),
+            FloatingActionButton.extended(
               heroTag: 'alert_btn',
               onPressed: () => _showSendAlertDialog(context),
-              backgroundColor: CIROTheme.error,
+              backgroundColor: CIROTheme.error.withOpacity(0.55),
               icon: const Icon(Icons.campaign, color: Colors.white, size: 18),
               label: const Text('ALERT', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
             ),
@@ -215,7 +235,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             FloatingActionButton.extended(
               heroTag: 'report_btn',
               onPressed: () => _showOutcomeReport(context),
-              backgroundColor: CIROTheme.secondary,
+              backgroundColor: CIROTheme.secondary.withOpacity(0.55),
               icon: const Icon(Icons.analytics, color: Colors.black, size: 18),
               label: const Text('REPORT', style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),
             ),
@@ -230,7 +250,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   builder: (context) => const ChatWidget(),
                 );
               },
-              backgroundColor: CIROTheme.primary,
+              backgroundColor: CIROTheme.primary.withOpacity(0.55),
               icon: const Icon(Icons.auto_awesome, color: Colors.black, size: 18),
               label: const Text('CHAT', style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),
             ),
@@ -241,71 +261,116 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // ─── Ingest Signal Dialog ──────────────────────────────────────────────────
-  void _showIngestDialog(BuildContext context, String scenarioName) {
+  // ─── Unified Ingest Signal Dialog ──────────────────────────────────────────
+  void _showIngestDialog(BuildContext context) {
     final originCtrl = TextEditingController(text: 'Saddar');
     final destCtrl = TextEditingController(text: 'Korangi');
+    String selectedScenario = _currentScenario;
+
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: CIROTheme.surface,
-        title: Text('Run: $scenarioName',
-            style: const TextStyle(color: CIROTheme.primary, fontSize: 14)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Enter route for agent analysis:',
-                style: TextStyle(color: CIROTheme.textDim, fontSize: 12)),
-            const SizedBox(height: 12),
-            TextField(
-              controller: originCtrl,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                labelText: 'Origin',
-                labelStyle: TextStyle(color: CIROTheme.textDim),
-                enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: CIROTheme.primary)),
-                focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: CIROTheme.primary, width: 2)),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: CIROTheme.surface,
+              title: const Text('Start New Route Analysis',
+                  style: TextStyle(color: CIROTheme.primary, fontSize: 16)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('1. Enter route coordinates:',
+                      style: TextStyle(color: CIROTheme.textDim, fontSize: 12)),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: originCtrl,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Origin',
+                      labelStyle: TextStyle(color: CIROTheme.textDim),
+                      enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: CIROTheme.primary)),
+                      focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: CIROTheme.primary, width: 2)),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: destCtrl,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Destination',
+                      labelStyle: TextStyle(color: CIROTheme.textDim),
+                      enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: CIROTheme.primary)),
+                      focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: CIROTheme.primary, width: 2)),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text('2. Select crisis scenario to simulate:',
+                      style: TextStyle(color: CIROTheme.textDim, fontSize: 12)),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: CIROTheme.primary),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        dropdownColor: CIROTheme.surface,
+                        value: selectedScenario,
+                        isExpanded: true,
+                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                        items: const [
+                          DropdownMenuItem(value: 'Urban Flooding', child: Text('Scenario 1: Flooding')),
+                          DropdownMenuItem(value: 'Heatwave Emergency', child: Text('Scenario 2: Heatwave')),
+                          DropdownMenuItem(value: 'Road Blockage', child: Text('Scenario 3: Road Blockage')),
+                          DropdownMenuItem(value: 'Road Accident', child: Text('Scenario 4: Accident')),
+                          DropdownMenuItem(value: 'Infrastructure Failure', child: Text('Scenario 5: Infrastructure')),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) {
+                            setDialogState(() => selectedScenario = val);
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: destCtrl,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                labelText: 'Destination',
-                labelStyle: TextStyle(color: CIROTheme.textDim),
-                enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: CIROTheme.primary)),
-                focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: CIROTheme.primary, width: 2)),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('CANCEL', style: TextStyle(color: CIROTheme.textDim)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: CIROTheme.primary),
-            onPressed: () {
-              Navigator.pop(ctx);
-              setState(() {
-                _activeOrigin = originCtrl.text.trim();
-                _activeDestination = destCtrl.text.trim();
-              });
-              context.read<CrisisBloc>().add(IngestSignalEvent(
-                origin: originCtrl.text.trim(),
-                destination: destCtrl.text.trim(),
-              ));
-            },
-            child: const Text('ANALYSE', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('CANCEL', style: TextStyle(color: CIROTheme.textDim)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: CIROTheme.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    setState(() {
+                      _currentScenario = selectedScenario;
+                      _activeOrigin = originCtrl.text.trim();
+                      _activeDestination = destCtrl.text.trim();
+                    });
+                    context.read<CrisisBloc>().add(IngestSignalEvent(
+                      origin: originCtrl.text.trim(),
+                      destination: destCtrl.text.trim(),
+                      scenario: selectedScenario,
+                    ));
+                  },
+                  child: const Text('ANALYSE ROUTE', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 

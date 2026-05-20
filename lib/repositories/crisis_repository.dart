@@ -11,10 +11,12 @@ class CrisisRepository {
   Future<Map<String, dynamic>> ingestSignal({
     required String origin,
     required String destination,
+    String? scenario,
   }) async {
     return await _apiService.ingestSignal(
       origin: origin,
       destination: destination,
+      scenario: scenario,
     );
   }
 

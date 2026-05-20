@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:ciro/services/data_service.dart';
 
 class SirenaApiService {
   static final SirenaApiService _instance = SirenaApiService._internal();
@@ -6,8 +7,8 @@ class SirenaApiService {
 
   late final Dio _dio;
 
-  // Local backend for verification via ADB reverse
-  static const String _baseUrl = 'http://127.0.0.1:8000/';
+  // Production backend on Hugging Face
+  static const String _baseUrl = 'https://muhammadahsanmask-sirena-backend.hf.space/';
 
   SirenaApiService._internal() {
     _dio = Dio(
@@ -24,13 +25,22 @@ class SirenaApiService {
   Future<Map<String, dynamic>> ingestSignal({
     required String origin,
     required String destination,
+    String? scenario,
   }) async {
+    // Inject the exact city into the string so the backend doesn't default to Islamabad
+    final zoneInfo = DataService().getZoneInfo(origin);
+    final city = zoneInfo?['city'] ?? '';
+    final finalOrigin = city.isNotEmpty && !origin.toLowerCase().contains(city.toLowerCase()) 
+        ? '$origin, $city' 
+        : origin;
+
     try {
       final response = await _dio.post(
         'api/ingest/signal',
         data: {
-          'user_origin': origin,
+          'user_origin': finalOrigin,
           'user_destination': destination,
+          if (scenario != null) 'scenario': scenario,
         },
       );
       

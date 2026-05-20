@@ -72,7 +72,7 @@ class _AgentTracePanelState extends State<AgentTracePanel> {
 
   /// Connects to the real backend SSE stream
   Future<void> _connectToLiveStream(String sessionId) async {
-    final baseUrl = 'http://127.0.0.1:8000';
+    final baseUrl = 'https://muhammadahsanmask-sirena-backend.hf.space';
     final url = '$baseUrl/api/stream/$sessionId';
 
     try {
